@@ -1,7 +1,7 @@
 import { benchmarkFeedsForProvider, parseBenchmarkFeed } from './benchmarks-auto.js';
 
 function scoreCount(map){return [...map.values()].reduce((n,a)=>n+a.length,0)}
-function mergeMaps(target,source){for(const[modelId,scores]of source){const old=target.get(modelId)||[],seen=new Set(old.map(x=>x.benchmark_id));for(const s of scores)if(!seen.has(s.benchmark_id)){old.push(s);seen.add(s.benchmark_id)}if(old.length)target.set(modelId,old)}return target}
+function mergeMaps(target,source,{replace=false}={}){for(const[modelId,scores]of source){const old=target.get(modelId)||[];const byId=new Map(old.map(x=>[x.benchmark_id,x]));for(const s of scores)if(replace||!byId.has(s.benchmark_id))byId.set(s.benchmark_id,s);const merged=[...byId.values()];if(merged.length)target.set(modelId,merged)}return target}
 function stripHtml(s=''){return String(s).replace(/<br\s*\/?\s*>/gi,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;|&#160;/gi,' ').replace(/&amp;/gi,'&').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>').replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/\s+/g,' ').trim()}
 
 export function htmlTablesToPipeText(raw=''){
@@ -55,14 +55,14 @@ function parseCohereInline(raw,feed){
 }
 
 export function parseBenchmarkFeedResilient(raw,feed){
-  const merged=new Map();
-  mergeMaps(merged,parseBenchmarkFeed(raw,feed));
-  if(/<tr\b/i.test(String(raw))){
+  const merged=new Map(),hasHtmlTable=/<tr\b/i.test(String(raw));
+  if(hasHtmlTable){
     const normalized=htmlTablesToPipeText(raw);
     if(normalized)mergeMaps(merged,parseBenchmarkFeed(normalized,{...feed,mode:'table'}));
-  }
-  if(feed.id==='qwen3-eval')mergeMaps(merged,parseQwenRowFeed(raw,feed));
-  if(feed.id==='cohere-command-a-plus')mergeMaps(merged,parseCohereInline(raw,feed));
+    if(scoreCount(merged)===0)mergeMaps(merged,parseBenchmarkFeed(raw,feed));
+  }else mergeMaps(merged,parseBenchmarkFeed(raw,feed));
+  if(feed.id==='qwen3-eval')mergeMaps(merged,parseQwenRowFeed(raw,feed),{replace:true});
+  if(feed.id==='cohere-command-a-plus')mergeMaps(merged,parseCohereInline(raw,feed),{replace:true});
   return merged;
 }
 
