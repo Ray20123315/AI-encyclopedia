@@ -1,0 +1,25 @@
+{
+  "name": "ai-encyclopedia",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-09-06",
+  "triggers": {
+    "crons": ["*/30 * * * *"]
+  },
+  "durable_objects": {
+    "bindings": [
+      { "name": "STATE", "class_name": "EncyclopediaState" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["EncyclopediaState"] }
+  ],
+  "vars": {
+    "SYNC_COOLDOWN_SECONDS": "300",
+    "HISTORY_MAX_ROWS": "1500"
+  },
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  }
+}
