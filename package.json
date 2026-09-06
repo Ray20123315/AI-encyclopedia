@@ -1,6 +1,6 @@
 {
   "name": "ai-encyclopedia",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,7 +8,7 @@
     "deploy": "wrangler deploy",
     "test": "node --test tests/*.test.mjs",
     "check:ui": "node scripts/check-ui.mjs",
-    "check:syntax": "node --check src/worker.js && node --check src/core.js && node --check src/schema.js && node --check src/benchmarks-auto.js && node --check src/benchmark-sync.js && node --check public/app.js && node --check public/source-health.js && node --check public/catalog-group.js && node --check public/cost-ranking.js",
+    "check:syntax": "node --check src/worker.js && node --check src/core.js && node --check src/schema.js && node --check src/benchmarks-auto.js && node --check src/benchmark-sync.js && node --check public/app.js && node --check public/source-health.js && node --check public/catalog-group.js && node --check public/cost-ranking.js && node --check public/ui-polish.js",
     "check": "npm run check:syntax && npm run check:ui && npm test"
   },
   "devDependencies": {"wrangler": "^4.0.0"}
