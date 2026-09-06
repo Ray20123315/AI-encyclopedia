@@ -53,7 +53,7 @@ export function windowNear(text, needle, before = 100, after = 900) {
   return text.slice(Math.max(0, idx - before), idx + after);
 }
 
-export async function fetchText(urls, userAgent = 'AI-Encyclopedia/0.1 (+Cloudflare-Worker; public-official-data-sync)') {
+export async function fetchText(urls, userAgent = 'AI-Encyclopedia/0.2 (+Cloudflare-Worker; public-official-data-sync)') {
   const list = Array.isArray(urls) ? urls : [urls];
   let lastError = null;
   for (const url of list) {
@@ -89,9 +89,9 @@ export async function runProviderSync(provider) {
     try {
       const result = await fetchText(source.urls || source.url);
       fetched[source.id] = result.text;
-      source_status[source.id] = { ok: true, resolved_url: result.url };
+      source_status[source.id] = { ok: true, title:source.title || source.title_zh || source.id, kind:source.kind || '官方文件', configured_url:(source.urls || source.url), resolved_url: result.url };
     } catch (err) {
-      source_status[source.id] = { ok: false, error: String(err?.message || err) };
+      source_status[source.id] = { ok: false, title:source.title || source.title_zh || source.id, kind:source.kind || '官方文件', configured_url:(source.urls || source.url), error: String(err?.message || err) };
     }
   }
 
@@ -118,6 +118,8 @@ export async function runProviderSync(provider) {
       id: provider.id,
       name: provider.name,
       homepage: provider.homepage,
+      type: provider.type || '模型供應商',
+      description_zh: provider.description_zh || '',
       status,
       last_attempt_at: now,
       last_success_at: parserWorked ? now : null,
@@ -161,7 +163,8 @@ export function snapshotFingerprint(data) {
     status: m.status,
     pricing: m.pricing,
     quotas: m.quotas,
-    context_window: m.context_window
+    context_window: m.context_window,
+    benchmarks: m.benchmarks
   }));
   return JSON.stringify(compact);
 }

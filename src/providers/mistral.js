@@ -1,0 +1,11 @@
+import { htmlToText, windowNear } from '../core.js';
+import { modelSource, prettyId } from './helpers.js';
+const PRICE='https://docs.mistral.ai/inference/pricing';
+const MODELS='https://docs.mistral.ai/getting-started/models/models_overview/';
+export const mistralProvider={
+ id:'mistral',name:'Mistral AI',type:'模型供應商',homepage:'https://mistral.ai/',description_zh:'Mistral 旗艦與專用模型；保留快取、Batch 與不同媒體計價。',
+ sources:[{id:'pricing',title:'Mistral 官方定價',kind:'官方定價',required:true,url:PRICE},{id:'models',title:'Mistral 模型目錄',kind:'官方模型目錄',required:false,url:MODELS}],
+ seed_models:[ms('mistral-large-3','Mistral Large 3',.5,.05,1.5),ms('mistral-medium-3.5','Mistral Medium 3.5',1.5,.15,7.5),ms('mistral-small-4','Mistral Small 4',.15,.015,.6),ms('ministral-3-14b','Ministral 3 14B',.2,.02,.2),ms('ministral-3-8b','Ministral 3 8B',.15,.015,.15),ms('ministral-3-3b','Ministral 3 3B',.1,.01,.1)],
+ async parse(fetched){const text=htmlToText(`${fetched.pricing||''}\n${fetched.models||''}`);if(!text)return[];const map=new Map(this.seed_models.map(m=>[m.model_id,m]));const names=['Mistral Large 3','Mistral Medium 3.5','Mistral Small 4','Ministral 3 14B','Ministral 3 8B','Ministral 3 3B'];for(const name of names){const seed=[...map.values()].find(m=>m.name===name);if(!seed)continue;const w=windowNear(text,name,20,700);const d=[...w.matchAll(/\$\s*([0-9]+(?:\.[0-9]+)?)/g)].map(m=>Number(m[1]));if(d.length>=3)seed.pricing=[{currency:'USD',unit:'1M_tokens',mode:'standard',input:d[0],cached_input:d[1],output:d[2]}];}const ids=[...new Set([...text.matchAll(/\b((?:mistral|ministral)[a-z0-9._-]+)\b/gi)].map(m=>m[1].toLowerCase()))];for(const id of ids.slice(0,160)){if(!map.has(id))map.set(id,{model_id:id,name:prettyId(id),name_zh:prettyId(id),family:'Mistral',status:'active',capabilities:['text'],pricing:[],source_url:MODELS});}return[...map.values()].map(m=>({...m,sources:[modelSource('Mistral 官方定價',PRICE,'Mistral AI'),modelSource('Mistral 模型目錄',MODELS,'Mistral AI')]}));}
+};
+function ms(id,name,input,cached,output){return{model_id:id,name,name_zh:name,family:name.startsWith('Ministral')?'Ministral':'Mistral',status:'active',capabilities:['text','reasoning','tools','coding'],pricing:[{currency:'USD',unit:'1M_tokens',mode:'standard',input,cached_input:cached,output,batch_input:input*.5,batch_output:output*.5}],source_url:PRICE}}

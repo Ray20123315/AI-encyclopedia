@@ -1,54 +1,48 @@
-import { htmlToText } from '../core.js';
+import { htmlToText, windowNear } from '../core.js';
+import { modelSource } from './helpers.js';
 
-export const anthropicProvider = {
-  id: 'anthropic',
-  name: 'Anthropic',
-  homepage: 'https://www.anthropic.com/',
-  sources: [
-    { id:'sonnet', required:false, url:'https://www.anthropic.com/claude/sonnet' },
-    { id:'opus', required:false, url:'https://www.anthropic.com/claude/opus' },
-    { id:'fable', required:false, url:'https://www.anthropic.com/claude/fable' },
-    { id:'lifecycle', required:false, url:'https://docs.anthropic.com/en/docs/about-claude/model-deprecations' }
+const SONNET='https://www.anthropic.com/research/claude-sonnet-5';
+const OPUS='https://www.anthropic.com/claude/opus';
+const FABLE='https://www.anthropic.com/claude/fable';
+const MYTHOS='https://www.anthropic.com/claude/mythos';
+
+export const anthropicProvider={
+  id:'anthropic',name:'Anthropic / Claude',type:'模型供應商',homepage:'https://www.anthropic.com/',
+  description_zh:'Claude 模型供應商；保留標準、Fast、快取與批次等價格差異。',
+  sources:[
+    {id:'sonnet',title:'Claude Sonnet 5',kind:'官方模型頁',required:true,url:SONNET},
+    {id:'opus',title:'Claude Opus 系列',kind:'官方模型頁',required:true,url:OPUS},
+    {id:'fable',title:'Claude Fable 系列',kind:'官方模型頁',required:true,url:FABLE},
+    {id:'mythos',title:'Claude Mythos 系列',kind:'官方模型頁',required:false,url:MYTHOS}
   ],
-  seed_models: [
-    claude('claude-sonnet-5','Claude Sonnet 5','Sonnet',2,10,['low','medium','high','xhigh']),
-    claude('claude-opus-5','Claude Opus 5','Opus',5,25,['low','medium','high','xhigh']),
-    claude('claude-fable-5.1','Claude Fable 5.1','Fable',10,50,['medium','high','xhigh'])
+  seed_models:[
+    cl('claude-sonnet-5','Claude Sonnet 5',2,10,SONNET,{reasoning:['low','medium','high','xhigh']}),
+    cl('claude-opus-5','Claude Opus 5',5,25,OPUS,{context:1000000,reasoning:['low','medium','high','xhigh','max'],fast:true}),
+    cl('claude-fable-5.1','Claude Fable 5.1',10,50,FABLE,{cached:.25,context:1000000}),
+    cl('claude-mythos-5.1','Claude Mythos 5.1',10,50,MYTHOS,{status:'restricted',context:1000000})
   ],
-  async parse(fetched) {
-    const rows = [];
-    for (const spec of [
-      ['sonnet','claude-sonnet-5','Claude Sonnet 5','Sonnet'],
-      ['opus','claude-opus-5','Claude Opus 5','Opus'],
-      ['fable','claude-fable-5.1','Claude Fable 5.1','Fable']
-    ]) {
-      const [sourceKey,id,name,family] = spec;
-      const text = htmlToText(fetched[sourceKey] || '');
-      if (!text) continue;
-      const patterns = [
-        /\$\s*([0-9]+(?:\.[0-9]+)?)\s*(?:per|\/)\s*(?:one\s+)?million\s+input\s+tokens[\s\S]{0,180}?\$\s*([0-9]+(?:\.[0-9]+)?)\s*(?:per|\/)\s*(?:one\s+)?million\s+output\s+tokens/i,
-        /priced at\s*\$\s*([0-9]+(?:\.[0-9]+)?)\s*per million input tokens\s*and\s*\$\s*([0-9]+(?:\.[0-9]+)?)\s*per million output tokens/i,
-        /starts at\s*\$\s*([0-9]+(?:\.[0-9]+)?)\s*per million input tokens\s*and\s*\$\s*([0-9]+(?:\.[0-9]+)?)\s*per million output tokens/i
-      ];
-      let match = null;
-      for (const p of patterns) { match = text.match(p); if (match) break; }
-      const seed = this.seed_models.find(m => m.model_id === id);
-      const input = match ? Number(match[1]) : seed.pricing[0].input;
-      const output = match ? Number(match[2]) : seed.pricing[0].output;
-      rows.push(claude(id,name,family,input,output,seed.reasoning_efforts, sourceKey==='opus' ? 2.5 : null));
+  async parse(fetched){
+    const sourceById={
+      'claude-sonnet-5':['sonnet',SONNET], 'claude-opus-5':['opus',OPUS],
+      'claude-fable-5.1':['fable',FABLE], 'claude-mythos-5.1':['mythos',MYTHOS]
+    };
+    const out=[];
+    for(const seed of this.seed_models){
+      const [key,url]=sourceById[seed.model_id]; const text=htmlToText(fetched[key]||'');
+      let pricing=seed.pricing;
+      if(text){
+        const w=windowNear(text,seed.name,80,2500)||text;
+        const m=w.match(/\$\s*([0-9]+(?:\.[0-9]+)?)\s*(?:per|\/).*?input[\s\S]{0,180}?\$\s*([0-9]+(?:\.[0-9]+)?)\s*(?:per|\/).*?output/i);
+        if(m) pricing=seed.pricing.map((p,i)=>i===0?{...p,input:Number(m[1]),output:Number(m[2])}:p);
+      }
+      out.push({...seed,pricing,sources:[modelSource('官方模型與定價',url,'Anthropic')]});
     }
-    return rows;
+    return out;
   }
 };
-
-function claude(id,name,family,input,output,efforts,fastSpeed=null) {
-  return {
-    model_id:id,name,family,status:'active',context_window:null,
-    capabilities:['text','reasoning','tools','coding','vision'],reasoning_efforts:efforts,
-    pricing:[
-      {currency:'USD',unit:'1M_tokens',input,output,cached_input:input*0.1,cache_write:input*1.25,mode:'standard',note:'Cache write uses 5-minute default multiplier where applicable'},
-      ...(fastSpeed ? [{currency:'USD',unit:'1M_tokens',input:input*2,output:output*2,mode:'fast',note:`~${fastSpeed}x speed; 2x base price`}]:[])
-    ],
-    source_url:`https://www.anthropic.com/claude/${family.toLowerCase()}`
-  };
+function cl(id,name,input,output,url,opt={}){
+ const cached=opt.cached??input*.1;
+ const pricing=[{currency:'USD',unit:'1M_tokens',mode:'standard',input,cached_input:cached,cache_write:input*1.25,output,batch_input:input*.5,batch_output:output*.5}];
+ if(opt.fast) pricing.push({currency:'USD',unit:'1M_tokens',mode:'fast',input:input*2,output:output*2,note:'官方 Fast mode 約 2.5 倍速度、2 倍基礎價格'});
+ return{model_id:id,name,name_zh:name,family:name.includes('Sonnet')?'Sonnet':name.includes('Opus')?'Opus':name.includes('Fable')?'Fable':'Mythos',status:opt.status||'active',context_window:opt.context||null,capabilities:['text','vision','reasoning','tools','coding'],reasoning_efforts:opt.reasoning||[],pricing,source_url:url};
 }
