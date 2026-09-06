@@ -53,7 +53,7 @@ export function windowNear(text, needle, before = 100, after = 900) {
   return text.slice(Math.max(0, idx - before), idx + after);
 }
 
-export async function fetchText(urls, userAgent = 'AI-Encyclopedia/0.2 (+Cloudflare-Worker; public-official-data-sync)') {
+export async function fetchText(urls, userAgent = 'AI-Encyclopedia/0.2.1 (+Cloudflare-Worker; public-official-data-sync)') {
   const list = Array.isArray(urls) ? urls : [urls];
   let lastError = null;
   for (const url of list) {
@@ -107,11 +107,17 @@ export async function runProviderSync(provider) {
   const models = (parsed.length ? parsed : provider.seed_models || [])
     .map(m => normalizeModel(provider, { ...m, synced_at: now }));
 
+  const totalSources = (provider.sources || []).length;
   const okSources = Object.values(source_status).filter(s => s.ok).length;
   const requiredSources = (provider.sources || []).filter(s => s.required !== false).length;
   const okRequired = (provider.sources || []).filter(s => s.required !== false && source_status[s.id]?.ok).length;
   const parserWorked = parsed.length > 0;
-  const status = parserWorked && okRequired === requiredSources ? 'synced' : parserWorked || okSources > 0 ? 'partial' : 'fallback';
+  const allConfiguredSourcesOk = okSources === totalSources;
+  const status = parserWorked && okRequired === requiredSources && allConfiguredSourcesOk
+    ? 'synced'
+    : parserWorked || okSources > 0
+      ? 'partial'
+      : 'fallback';
 
   return {
     provider: {
@@ -124,6 +130,10 @@ export async function runProviderSync(provider) {
       last_attempt_at: now,
       last_success_at: parserWorked ? now : null,
       source_status,
+      source_success_count: okSources,
+      source_total_count: totalSources,
+      required_source_success_count: okRequired,
+      required_source_total_count: requiredSources,
       parse_error,
       model_count: models.length
     },
@@ -153,7 +163,7 @@ export function mergeProviderResult(current, result) {
   next.meta.schema_version = DATA_SCHEMA_VERSION;
   next.meta.provider_count = next.providers.length;
   next.meta.model_count = next.models.length;
-  next.meta.status = next.providers.some(p => p.status === 'fallback') ? 'partial' : 'synced';
+  next.meta.status = next.providers.some(p => p.status !== 'synced') ? 'partial' : 'synced';
   return next;
 }
 
