@@ -13,15 +13,27 @@ import { mistralProvider } from '../src/providers/mistral.js';
 import { groqProvider } from '../src/providers/groq.js';
 import { PROVIDERS } from '../src/providers/index.js';
 import { normalizeModel, primaryPrice, DATA_SCHEMA_VERSION } from '../src/schema.js';
+import { runProviderSync } from '../src/core.js';
 
 test('資料結構版本為 v2',()=>assert.equal(DATA_SCHEMA_VERSION,2));
 
-test('OpenAI 解析 Codex 額度，並使用目前 GPT-5.6 定價', async()=>{
+test('OpenAI 解析 Codex 額度、Developer Pricing 長短脈絡 tier，並自動發現目錄模型', async()=>{
  const pricing=`GPT-6 Astra | 5-45 | 25-225 | 100-900\nGPT-5.6 Sol | 10-100 | 50-500 | 200-2,000\nGPT-5.6 Terra | 25-200 | 125-1,000 | 500-4,000\nGPT-5.6 Luna | 250-2,000 | 1,250-10,000 | 5,000-40,000\nGPT-5.5 | 15-80 | 75-400 | 300-1,600\nGPT-5.4 mini | 60-350 | 300-1,750 | 1,200-7,000`;
- const release=`GPT-5.6 Sol $5 input / $30 output. GPT-5.6 Terra $2.50 input / $15 output. GPT-5.6 Luna $1 input / $6 output.`;
- const models=await openaiProvider.parse({codex_pricing:pricing,gpt56_release:release});
+ const api=`gpt-6-astra | $10.00 | $1.00 | $12.50 | $50.00 | $20.00 | $2.00 | $25.00 | $75.00\ngpt-5.6-sol | $4.00 | $0.40 | $5.00 | $20.00 | $8.00 | $0.80 | $10.00 | $30.00\ngpt-5.6-terra | $2.00 | $0.20 | $2.50 | $12.00 | $4.00 | $0.40 | $5.00 | $18.00\ngpt-5.6-luna | $0.20 | $0.02 | $0.25 | $1.20 | $0.40 | $0.04 | $0.50 | $1.80`;
+ const catalog='gpt-6-astra gpt-5.6-sol gpt-5.6-terra gpt-5.6-luna gpt-image-2 gpt-realtime-2.1 sora-2 gpt-transcribe text-embedding-3-large';
+ const models=await openaiProvider.parse({codex_pricing:pricing,api_pricing:api,model_catalog:catalog});
  const sol=models.find(m=>m.model_id==='gpt-5.6-sol');
- assert.equal(sol.quotas[0].min,10);assert.equal(sol.quotas[0].max,100);assert.equal(sol.pricing[0].input,5);assert.equal(sol.pricing[0].output,30);
+ assert.equal(sol.quotas[0].min,10);assert.equal(sol.quotas[0].max,100);assert.equal(sol.pricing[0].input,4);assert.equal(sol.pricing[0].output,20);assert.equal(sol.pricing[1].input,8);assert.equal(sol.pricing[1].output,30);
+ assert.ok(models.some(m=>m.model_id==='gpt-image-2'));assert.ok(models.some(m=>m.model_id==='sora-2'));assert.ok(models.some(m=>m.model_id==='text-embedding-3-large'));
+});
+
+test('任一已設定來源失敗時 Provider 必須標示部分同步，不可顯示完全同步', async()=>{
+ const previous=globalThis.fetch;
+ globalThis.fetch=async url=>String(url).includes('ok.example')?new Response('x'.repeat(200),{status:200}):new Response('blocked',{status:403});
+ try{
+  const provider={id:'sync-test',name:'同步測試',sources:[{id:'main',required:true,url:'https://ok.example'},{id:'optional',required:false,url:'https://blocked.example'}],seed_models:[{model_id:'seed',name:'Seed'}],parse:async fetched=>fetched.main?[{model_id:'fresh',name:'Fresh'}]:[]};
+  const result=await runProviderSync(provider);assert.equal(result.provider.status,'partial');assert.equal(result.provider.source_success_count,1);assert.equal(result.provider.source_total_count,2);
+ }finally{globalThis.fetch=previous}
 });
 
 test('Anthropic 保留 Sonnet / Opus / Fable / Mythos',async()=>{
@@ -54,4 +66,4 @@ test('Groq 以部署平台身分保留 provider/model ID',async()=>{const models
 
 test('所有 Provider ID 唯一且至少有可顯示模型種子',()=>{const ids=PROVIDERS.map(p=>p.id);assert.equal(new Set(ids).size,ids.length);assert.ok(PROVIDERS.length>=16);for(const p of PROVIDERS)assert.ok((p.seed_models||[]).length>0,`${p.id} 缺少 fallback seed`);});
 
-test('正規化模型具有 provider-qualified uid、來源與評測',()=>{const m=normalizeModel(openaiProvider,openaiProvider.seed_models[1]);assert.equal(m.uid,'openai:gpt-5.6-sol');assert.equal(primaryPrice(m).input,5);assert.ok(m.benchmarks.length>=3);assert.ok(m.sources.length>=1);});
+test('正規化模型具有 provider-qualified uid、來源與評測',()=>{const m=normalizeModel(openaiProvider,openaiProvider.seed_models[1]);assert.equal(m.uid,'openai:gpt-5.6-sol');assert.equal(primaryPrice(m).input,4);assert.ok(m.benchmarks.length>=3);assert.ok(m.sources.length>=1);});
