@@ -32,7 +32,7 @@
       <article class="stat"><small>資料來源／平台</small><strong id="來源數">-</strong><span>模型商 + 推論平台</span></article>
       <article class="stat"><small>模型／部署項目</small><strong id="模型數">-</strong><span>官方目錄 + 後備項目</span></article>
       <article class="stat"><small>自動評測模型</small><strong id="有分數數">-</strong><span id="評測總數">- 筆評測</span></article>
-      <article class="stat"><small>同步健康來源</small><strong id="健康數">-</strong><span>完整同步 / 全部來源</span></article>
+      <article class="stat"><small>資料同步健康</small><strong id="健康數">-</strong><span>模型／價格同步，不含評測</span></article>
       <article class="stat"><small>目前篩選結果</small><strong id="可見數">-</strong><span>可立即勾選比較</span></article>
     </section>
 
@@ -92,7 +92,7 @@
 
       <section id="頁-sources" class="hidden">
         <article class="panel">
-          <div class="ph"><div><span class="kicker">SOURCE CENTER</span><h2>資料來源與同步健康度</h2></div><span>同一供應商的來源可收合</span></div>
+          <div class="ph"><div><span class="kicker">SOURCE CENTER</span><h2>資料來源與同步健康度</h2></div><span>資料同步與評測同步分開顯示</span></div>
           <div class="source-toolbar"><input id="來源搜尋" placeholder="搜尋來源、供應商或網址"><button id="全部展開" class="ghost-btn">全部展開</button><button id="全部收合" class="ghost-btn">全部收合</button></div>
           <div id="來源中心" class="source-accordion"></div>
         </article>
@@ -102,5 +102,6 @@
 
   <dialog id="詳情視窗"><div class="dh"><strong id="詳情標題"></strong><button id="關閉詳情" class="close">關閉</button></div><div id="詳情內容" class="db"></div></dialog>
   <script src="/app.js"></script>
+  <script src="/source-health.js"></script>
 </body>
 </html>
