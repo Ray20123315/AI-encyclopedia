@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="/catalog-group.css">
   <link rel="stylesheet" href="/cost-ranking.css">
+  <link rel="stylesheet" href="/ui-scale.css">
 </head>
 <body>
   <div class="ambient ambient-a"></div>
@@ -62,16 +63,18 @@
       <section id="頁-catalog">
         <div class="grid2 chart-grid">
           <article class="panel chart-panel price-map-panel">
-            <div class="ph"><div><span class="kicker">COST RANKING</span><h2>工作負載成本排行榜</h2></div><span>依目前篩選 · 最便宜優先</span></div>
+            <div class="ph"><div><span class="kicker">COST RANKING</span><h2>工作負載成本排行榜</h2></div><span>依目前篩選 · 最便宜優先 · 可上下捲動</span></div>
             <div class="cost-rank-controls">
               <label>每次輸入 token<input id="排行輸入" type="number" min="0" value="100000"></label>
               <label>每次輸出 token<input id="排行輸出" type="number" min="0" value="10000"></label>
               <label>請求次數<input id="排行次數" type="number" min="1" value="100"></label>
-              <label>顯示數量<select id="排行筆數"><option value="10">前 10</option><option value="20" selected>前 20</option><option value="30">前 30</option><option value="50">前 50</option></select></label>
+              <label>顯示數量<select id="排行筆數"><option value="all" selected>全部</option><option value="20">前 20</option><option value="50">前 50</option><option value="100">前 100</option></select></label>
               <label class="cost-rank-toggle"><input id="排行已選" type="checkbox">只看已勾選</label>
             </div>
-            <div class="cost-rank-summary"><span id="排行模型數">- 個可計價模型</span><span id="排行最便宜">最便宜：-</span><span id="排行中位數">中位數：-</span></div>
-            <div id="價格圖" class="chart chart-primary"></div>
+            <div class="cost-rank-summary"><span id="排行模型數">- 個可計價模型</span><span id="排行最便宜">最便宜：-</span><span id="排行中位數">中位數：-</span><button id="排行回頂" class="ghost-btn cost-rank-jump" type="button">回到最便宜</button></div>
+            <div id="排行捲動區" class="cost-rank-viewport" tabindex="0" aria-label="工作負載成本排行榜，可上下捲動">
+              <div id="價格圖" class="chart cost-rank-chart"></div>
+            </div>
           </article>
           <article class="panel chart-panel history-panel">
             <div class="ph"><div><span class="kicker">PRICE HISTORY</span><h2>價格歷史</h2></div><span id="歷史標題">點選模型名稱查看</span></div>
@@ -115,5 +118,6 @@
   <script src="/cost-ranking.js"></script>
   <script src="/source-health.js"></script>
   <script type="module" src="/catalog-group.js"></script>
+  <script src="/ui-polish.js"></script>
 </body>
 </html>
