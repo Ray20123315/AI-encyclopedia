@@ -9,7 +9,7 @@
   <script src="https://cdn.plot.ly/plotly-4.0.0.min.js" charset="utf-8"></script>
   <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="/catalog-group.css">
-  <link rel="stylesheet" href="/cost-ranking.css">
+  <link rel="stylesheet" href="/cost-lines.css">
   <link rel="stylesheet" href="/ui-scale.css">
 </head>
 <body>
@@ -63,18 +63,16 @@
       <section id="頁-catalog">
         <div class="grid2 chart-grid">
           <article class="panel chart-panel price-map-panel">
-            <div class="ph"><div><span class="kicker">COST RANKING</span><h2>工作負載成本排行榜</h2></div><span>依目前篩選 · 最便宜優先 · 可上下捲動</span></div>
-            <div class="cost-rank-controls">
-              <label>每次輸入 token<input id="排行輸入" type="number" min="0" value="100000"></label>
-              <label>每次輸出 token<input id="排行輸出" type="number" min="0" value="10000"></label>
-              <label>請求次數<input id="排行次數" type="number" min="1" value="100"></label>
-              <label>顯示數量<select id="排行筆數"><option value="all" selected>全部</option><option value="20">前 20</option><option value="50">前 50</option><option value="100">前 100</option></select></label>
-              <label class="cost-rank-toggle"><input id="排行已選" type="checkbox">只看已勾選</label>
+            <div class="ph"><div><span class="kicker">COST CURVES</span><h2>工作負載成本曲線</h2></div><span>勾選模型比較 · 長脈絡價格 tier 自動套用</span></div>
+            <div class="cost-curve-controls">
+              <label>X 軸<select id="曲線軸"><option value="input" selected>每次輸入 token</option><option value="output">每次輸出 token</option><option value="requests">請求次數</option></select></label>
+              <label>X 軸上限<input id="曲線上限" type="number" min="1" value="1000000"></label>
+              <label>固定輸入 token<input id="曲線輸入" type="number" min="0" value="100000"></label>
+              <label>固定輸出 token<input id="曲線輸出" type="number" min="0" value="10000"></label>
+              <label>固定請求次數<input id="曲線次數" type="number" min="1" value="100"></label>
             </div>
-            <div class="cost-rank-summary"><span id="排行模型數">- 個可計價模型</span><span id="排行最便宜">最便宜：-</span><span id="排行中位數">中位數：-</span><button id="排行回頂" class="ghost-btn cost-rank-jump" type="button">回到最便宜</button></div>
-            <div id="排行捲動區" class="cost-rank-viewport" tabindex="0" aria-label="工作負載成本排行榜，可上下捲動">
-              <div id="價格圖" class="chart cost-rank-chart"></div>
-            </div>
+            <div class="cost-curve-summary"><span id="曲線模式">未勾選時自動顯示目前篩選中成本最低 6 個</span><span class="cost-curve-note">圖例可點擊隱藏／單獨查看模型；滑鼠移動可同時比較相同工作量。</span></div>
+            <div id="價格圖" class="chart cost-curve-chart"></div>
           </article>
           <article class="panel chart-panel history-panel">
             <div class="ph"><div><span class="kicker">PRICE HISTORY</span><h2>價格歷史</h2></div><span id="歷史標題">點選模型名稱查看</span></div>
@@ -115,7 +113,7 @@
 
   <dialog id="詳情視窗"><div class="dh"><strong id="詳情標題"></strong><button id="關閉詳情" class="close">關閉</button></div><div id="詳情內容" class="db"></div></dialog>
   <script src="/app.js"></script>
-  <script src="/cost-ranking.js"></script>
+  <script src="/cost-lines.js"></script>
   <script src="/source-health.js"></script>
   <script type="module" src="/catalog-group.js"></script>
   <script src="/ui-polish.js"></script>
