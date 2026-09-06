@@ -1,4 +1,5 @@
 (()=>{
+  const UI_VERSION='0.3.2';
   let cache=null,lastFetch=0,timer=null;
   const 狀態文字=s=>({synced:'已同步',partial:'部分同步',fallback:'後備資料',seeded_fallback:'初始後備',none:'未設定'})[s]||s||'-';
   async function data(){
@@ -8,6 +9,7 @@
   }
   async function apply(){
     const d=await data();if(!d)return;
+    const version=document.getElementById('程式版本');if(version)version.textContent=`介面 v${UI_VERSION} · API v${d.meta?.app_version||'-'}`;
     const byName=new Map((d.providers||[]).map(p=>[p.name,p]));
     for(const group of document.querySelectorAll('.source-group')){
       const name=group.querySelector('.source-title strong')?.textContent?.trim(),p=byName.get(name);if(!p)continue;
