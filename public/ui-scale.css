@@ -1,0 +1,5 @@
+:root{--ui-scale:1.12}
+body{zoom:var(--ui-scale)}
+@media(max-width:1100px){:root{--ui-scale:1.08}}
+@media(max-width:760px){:root{--ui-scale:1.03}}
+@media(max-width:520px){:root{--ui-scale:1}}
