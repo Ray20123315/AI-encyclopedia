@@ -1,5 +1,5 @@
 (()=>{
-  const UI_VERSION='0.3.5';
+  const UI_VERSION='0.3.7';
   const el=document.getElementById('程式版本');
   if(!el)return;
   let busy=false;
