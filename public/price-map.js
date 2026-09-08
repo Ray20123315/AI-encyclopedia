@@ -67,8 +67,8 @@
       marker:{
         size:selected?13:8,
         color:colors[index%colors.length],
-        opacity:selected?.94:.72,
-        line:{width:selected?1.2:.55,color:'rgba(255,255,255,.46)'}
+        opacity:selected?0.94:0.72,
+        line:{width:selected?1.2:0.55,color:'rgba(255,255,255,.46)'}
       },
       hovertemplate:'<b>%{text}</b><br>%{customdata[0]}<br>輸入 $%{x}/1M · 輸出 $%{y}/1M<br><span style="color:#8095a8">點擊查看詳細說明</span><extra></extra>'
     };
